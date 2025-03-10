@@ -68,19 +68,21 @@ function sendMessage(sender_psid, response) {
 
 // Verify Webhook
 app.get("/webhook", (req, res) => {
-  let VERIFY_TOKEN = process.env.VERIFY_TOKEN; // ใช้ค่า VERIFY_TOKEN จาก .env
+  const VERIFY_TOKEN = process.env.VERIFY_TOKEN; // ดึงค่า VERIFY_TOKEN จาก .env
 
-  let mode = req.query["hub.mode"];
-  let token = req.query["hub.verify_token"];
-  let challenge = req.query["hub.challenge"];
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
 
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+  if (mode && token === VERIFY_TOKEN) {
     console.log("WEBHOOK VERIFIED");
-    res.status(200).send(challenge); // ส่งค่ากลับให้ Facebook
+    res.status(200).send(challenge); // คืนค่า challenge ให้ Facebook
   } else {
-    res.sendStatus(403); // Forbidden ถ้า token ไม่ตรงกัน
+    console.error("Forbidden: Token mismatch");
+    res.sendStatus(403);
   }
 });
+
 
 
 // Start Server
