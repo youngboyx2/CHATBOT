@@ -9,9 +9,12 @@ const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
-const openai = new OpenAIApi(new Configuration({
+const { OpenAI } = require("openai");
+
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
-}));
+});
+
 
 // Webhook Messenger
 app.post("/webhook", async (req, res) => {
