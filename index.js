@@ -68,17 +68,20 @@ function sendMessage(sender_psid, response) {
 
 // Verify Webhook
 app.get("/webhook", (req, res) => {
-  let VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+  let VERIFY_TOKEN = process.env.VERIFY_TOKEN; // ใช้ค่า VERIFY_TOKEN จาก .env
+
   let mode = req.query["hub.mode"];
   let token = req.query["hub.verify_token"];
   let challenge = req.query["hub.challenge"];
 
-  if (mode && token === VERIFY_TOKEN) {
-    res.status(200).send(challenge);
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    console.log("WEBHOOK VERIFIED");
+    res.status(200).send(challenge); // ส่งค่ากลับให้ Facebook
   } else {
-    res.sendStatus(403);
+    res.sendStatus(403); // Forbidden ถ้า token ไม่ตรงกัน
   }
 });
+
 
 // Start Server
 app.listen(PORT, () => {
