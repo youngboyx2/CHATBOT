@@ -40,16 +40,17 @@ app.post("/webhook", async (req, res) => {
 // ฟังก์ชัน ChatGPT
 async function getChatGPTResponse(userMessage) {
   try {
-    const response = await openai.createChatCompletion({
+    const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: userMessage }],
     });
-    return response.data.choices[0].message.content;
+    return response.choices[0].message.content;
   } catch (error) {
     console.error("ChatGPT Error:", error);
     return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
   }
 }
+
 
 // ฟังก์ชันส่งข้อความกลับไปที่ Messenger
 function sendMessage(sender_psid, response) {
