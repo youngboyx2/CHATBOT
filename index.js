@@ -28,7 +28,7 @@ async function getChatGPTResponse(userMessage) {
       content: userMessage,
     });
 
-    // ✅ 3. เรียกใช้ Assistant API โดยใช้ `thread_id` ที่สร้างก่อนหน้า
+    // ✅ 3. สร้าง Run และให้ Assistant ทำงาน
     const runResponse = await openaiClient.beta.threads.runs.create({
       thread_id: thread.id,
       assistant_id: "asst_ST3twGwQGZKeNqAvGjjG5gem",
@@ -38,12 +38,12 @@ async function getChatGPTResponse(userMessage) {
       throw new Error("Failed to start Assistant run");
     }
 
-    // ✅ 4. ตรวจสอบสถานะของ Assistant จนกว่าจะเสร็จสิ้น
-    let run;
+    // ✅ 4. รอให้ Assistant ทำงานเสร็จ
+    let runStatus;
     do {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      run = await openaiClient.beta.threads.runs.retrieve(thread.id, runResponse.id);
-    } while (run.status !== "completed");
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // รอ 2 วินาทีเพื่อลด API call rate
+      runStatus = await openaiClient.beta.threads.runs.retrieve(thread.id, runResponse.id);
+    } while (runStatus.status !== "completed");
 
     // ✅ 5. ดึงข้อความตอบกลับจาก Assistant
     const messages = await openaiClient.beta.threads.messages.list(thread.id);
@@ -51,7 +51,7 @@ async function getChatGPTResponse(userMessage) {
       throw new Error("No response from Assistant");
     }
 
-    const reply = messages.data[messages.data.length - 1].content[0].text.value;
+    const reply = messages.data[messages.data.length - 1]?.content?.[0]?.text?.value || "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
     return reply;
 
   } catch (error) {
@@ -59,9 +59,6 @@ async function getChatGPTResponse(userMessage) {
     return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
   }
 }
-
-
-
 
 // Webhook สำหรับ Messenger
 app.post("/webhook", async (req, res) => {
