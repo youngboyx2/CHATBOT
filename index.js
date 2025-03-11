@@ -37,21 +37,48 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-// ฟังก์ชัน ChatGPT
 async function getChatGPTResponse(userMessage) {
   try {
-    const thread = await openai.beta.threads.create({}, {
-      headers: { "OpenAI-Beta": "assistants=v2" }
-    });
+    let thread_id = global.thread_id || null;
 
+    // ✅ ตรวจสอบว่า Thread มีอยู่หรือไม่
+    if (!thread_id) {
+      const thread = await openai.beta.threads.create({}, {
+        headers: { "OpenAI-Beta": "assistants=v2" }
+      });
+      thread_id = thread.id;
+      global.thread_id = thread_id; // เก็บค่า Thread ID ไว้
+      console.log("✅ Created new thread:", thread_id);
+    }
+
+    // ✅ นับจำนวนข้อความใน Thread
+    const messages = await openai.beta.threads.messages.list(
+      thread_id,
+      { headers: { "OpenAI-Beta": "assistants=v2" } }
+    );
+
+    console.log("🔄 Current messages count:", messages.data.length);
+
+    // ✅ ถ้าข้อความเกิน 10 → สร้าง Thread ใหม่
+    if (messages.data.length >= 10) {
+      const newThread = await openai.beta.threads.create({}, {
+        headers: { "OpenAI-Beta": "assistants=v2" }
+      });
+      thread_id = newThread.id;
+      global.thread_id = thread_id; // อัปเดตค่า Thread ID ใหม่
+      console.log("🔄 Created new thread because message count exceeded 10:", thread_id);
+    }
+
+    // ✅ เพิ่มข้อความของผู้ใช้เข้าไปใน Thread
     await openai.beta.threads.messages.create(
-      thread.id,
+      thread_id,
       { role: "user", content: userMessage },
       { headers: { "OpenAI-Beta": "assistants=v2" } }
     );
 
+    // ✅ รัน Assistant API
     const runResponse = await openai.beta.threads.runs.create(
-      thread.id,
+      thread_id,
       { assistant_id: process.env.OPENAI_ASSISTANT_ID },
       { headers: { "OpenAI-Beta": "assistants=v2" } }
     );
@@ -60,18 +87,19 @@ async function getChatGPTResponse(userMessage) {
     do {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       runStatus = await openai.beta.threads.runs.retrieve(
-        thread.id,
+        thread_id,
         runResponse.id,
         { headers: { "OpenAI-Beta": "assistants=v2" } }
       );
     } while (runStatus.status !== "completed");
 
-    const messages = await openai.beta.threads.messages.list(
-      thread.id,
+    // ✅ ดึงข้อความล่าสุดจาก Assistant
+    const newMessages = await openai.beta.threads.messages.list(
+      thread_id,
       { headers: { "OpenAI-Beta": "assistants=v2" } }
     );
 
-    const assistantMessage = messages.data.find(msg => msg.role === "assistant");
+    const assistantMessage = newMessages.data.find(msg => msg.role === "assistant");
     const reply = cleanResponse(assistantMessage?.content[0]?.text?.value || "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้");
 
     console.log("✅ Assistant reply:", reply);
@@ -83,7 +111,7 @@ async function getChatGPTResponse(userMessage) {
   }
 }
 
-// ฟังก์ชันสำหรับลบ Annotation ที่ไม่ต้องการ
+// ✅ ฟังก์ชันทำความสะอาดข้อความที่ไม่ต้องการ
 function cleanResponse(text) {
   return text
     .replace(/\[\d+:\d+†source\]/g, "")
@@ -92,7 +120,6 @@ function cleanResponse(text) {
     .replace(/【\d+†[^\]]+】/g, "")
     .trim();
 }
-
  
 // ฟังก์ชันส่งข้อความกลับไปที่ Messenger
 function sendMessage(sender_psid, response) {
