@@ -71,9 +71,8 @@ async function getChatGPTResponse(userMessage) {
       { headers: { "OpenAI-Beta": "assistants=v2" } }
     );
 
-    // ดึงข้อความล่าสุดที่ Assistant ตอบ
     const assistantMessage = messages.data.find(msg => msg.role === "assistant");
-    const reply = assistantMessage?.content[0]?.text?.value || "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
+    const reply = cleanResponse(assistantMessage?.content[0]?.text?.value || "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้");
 
     console.log("✅ Assistant reply:", reply);
     return reply;
@@ -84,7 +83,12 @@ async function getChatGPTResponse(userMessage) {
   }
 }
 
+// ✅ ฟังก์ชันล้างข้อมูลที่ไม่ต้องการ
+function cleanResponse(text) {
+  return text.replace(/\[\d+:\d+†source\]/g, "").trim();
+}
 
+ 
 // ฟังก์ชันส่งข้อความกลับไปที่ Messenger
 function sendMessage(sender_psid, response) {
   let request_body = {
