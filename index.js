@@ -22,9 +22,15 @@ async function getChatGPTResponse(userMessage) {
       throw new Error("Failed to create thread");
     }
 
+    // เพิ่มข้อความลงใน Thread
+    await openaiClient.beta.threads.messages.create(thread.id, {
+      role: "user",
+      content: userMessage,
+    });
+
     // สร้าง Run ให้ Assistant ทำงาน
     const runResponse = await openaiClient.beta.threads.runs.create({
-      thread_id: thread.id,
+      thread_id: thread.id, // ใช้ thread_id ที่สร้างก่อนหน้า
       assistant_id: "asst_ST3twGwQGZKeNqAvGjjG5gem",
       instructions: "กรุณาตอบคำถามตามฐานข้อมูลที่เทรนไว้",
     });
@@ -54,6 +60,7 @@ async function getChatGPTResponse(userMessage) {
     return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
   }
 }
+
 
 
 // Webhook สำหรับ Messenger
