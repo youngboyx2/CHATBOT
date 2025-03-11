@@ -27,7 +27,7 @@ async function getOrCreateThread(sender_psid) {
     });
 
     // ✅ ถ้าข้อความเกิน 10 ข้อความ ให้สร้าง Thread ใหม่
-    if (messages.data.length >= 10) {
+    if (messages.data.length >= 3) {
       console.log("🔄 Creating new thread for user:", sender_psid);
       const newThread = await openai.beta.threads.create({}, {
         headers: { "OpenAI-Beta": "assistants=v2" }
