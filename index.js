@@ -1,145 +1,92 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const axios = require("axios");
-const dotenv = require("dotenv");
-const openai = require("openai");
-
-dotenv.config();
+require("dotenv").config();
+const { Configuration, OpenAIApi } = require("openai");
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
 app.use(bodyParser.json());
 
-const openaiClient = new openai.OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // ใช้ API Key จาก .env
+const { OpenAI } = require("openai");
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
 });
 
-// ฟังก์ชันใหม่ที่ใช้ Assistant API
-async function getChatGPTResponse(userMessage) {
-  try {
-    // ✅ 1. สร้าง Thread ใหม่ก่อน
-    const thread = await openaiClient.beta.threads.create();
-    if (!thread || !thread.id) {
-      throw new Error("❌ Failed to create thread");
-    }
-    console.log("✅ Thread created:", thread.id);
 
-    // ✅ 2. เพิ่มข้อความของผู้ใช้เข้าไปใน Thread
-    await openaiClient.beta.threads.messages.create(thread.id, {
-      role: "user",
-      content: userMessage,
-    });
-    console.log("✅ User message added to thread");
-
-    // ✅ 3. เรียกใช้ Assistant API
-    const assistantResponse = await runAssistant(thread.id);
-    return assistantResponse;
-
-  } catch (error) {
-    console.error("❌ ChatGPT Error:", error);
-    return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
-  }
-}
-
-// ✅ แยกฟังก์ชัน `runAssistant()` เพื่อจัดการการรัน Assistant
-async function runAssistant(threadId) {
-  try {
-    // ✅ 1. เรียกให้ Assistant เริ่ม Run
-    const runResponse = await openaiClient.beta.threads.runs.create({
-      thread_id: threadId,
-      assistant_id: "asst_ST3twGwQGZKeNqAvGjjG5gem",
-      model: "gpt-4o", // ✅ กำหนดโมเดลให้แน่ใจ
-      parameters: {},   // ✅ ป้องกันปัญหาพารามิเตอร์ที่ขาดหาย
-    });
-
-    if (!runResponse || !runResponse.id) {
-      throw new Error("❌ Failed to start Assistant run");
-    }
-    console.log("✅ Assistant run started:", runResponse.id);
-
-    // ✅ 2. รอให้ Assistant ทำงานเสร็จ
-    let runStatus;
-    do {
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // รอ 2 วินาที
-      runStatus = await openaiClient.beta.threads.runs.retrieve(threadId, runResponse.id);
-      console.log("🔄 Run status:", runStatus.status);
-    } while (runStatus.status !== "completed");
-
-    // ✅ 3. ดึงข้อความตอบกลับจาก Assistant
-    const messages = await openaiClient.beta.threads.messages.list(threadId);
-    if (!messages.data || messages.data.length === 0) {
-      throw new Error("❌ No response from Assistant");
-    }
-
-    const reply = messages.data[messages.data.length - 1]?.content?.[0]?.text?.value || "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
-    console.log("✅ Assistant reply:", reply);
-    return reply;
-
-  } catch (error) {
-    console.error("❌ Assistant Run Error:", error);
-    return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
-  }
-}
-
-// Webhook สำหรับ Messenger
+// Webhook Messenger
 app.post("/webhook", async (req, res) => {
   let body = req.body;
 
   if (body.object === "page") {
-    body.entry.forEach(async (entry) => {
-      let webhookEvent = entry.messaging[0];
-      let sender_psid = webhookEvent.sender.id;
-      let userMessage = webhookEvent.message?.text || "No message received";
+    body.entry.forEach(async function(entry) {
+      let webhook_event = entry.messaging[0];
+      let sender_psid = webhook_event.sender.id;
 
-      console.log("Received message:", userMessage);
-
-      // ใช้ฟังก์ชัน Assistant API
-      let botResponse = await getChatGPTResponse(userMessage);
-
-      // ส่งข้อความกลับไปที่ Messenger
-      sendMessage(sender_psid, botResponse);
+      if (webhook_event.message) {
+        let userMessage = webhook_event.message.text;
+        let aiResponse = await getChatGPTResponse(userMessage);
+        sendMessage(sender_psid, aiResponse);
+      }
     });
-
     res.status(200).send("EVENT_RECEIVED");
   } else {
     res.sendStatus(404);
   }
 });
 
-// ฟังก์ชันส่งข้อความกลับไปยัง Messenger
-async function sendMessage(sender_psid, response) {
+// ฟังก์ชัน ChatGPT
+async function getChatGPTResponse(userMessage) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: userMessage }],
+    });
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error("ChatGPT Error:", error);
+    return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
+  }
+}
+
+
+// ฟังก์ชันส่งข้อความกลับไปที่ Messenger
+function sendMessage(sender_psid, response) {
   let request_body = {
     recipient: { id: sender_psid },
     message: { text: response },
   };
 
-  try {
-    await axios.post(
-      `https://graph.facebook.com/v12.0/me/messages?access_token=${process.env.PAGE_ACCESS_TOKEN}`,
-      request_body
-    );
-    console.log("Message sent!");
-  } catch (error) {
-    console.error("Error sending message:", error.response ? error.response.data : error.message);
-  }
+  axios.post(
+    `https://graph.facebook.com/v12.0/me/messages?access_token=${process.env.PAGE_ACCESS_TOKEN}`,
+    request_body
+  )
+  .then(() => console.log("Message sent!"))
+  .catch((error) => console.error("Error sending message:", error));
 }
 
-// Webhook Verification
+// Verify Webhook
 app.get("/webhook", (req, res) => {
-  let VERIFY_TOKEN = process.env.VERIFY_TOKEN;
-  let mode = req.query["hub.mode"];
-  let token = req.query["hub.verify_token"];
-  let challenge = req.query["hub.challenge"];
+  const VERIFY_TOKEN = process.env.VERIFY_TOKEN; // ดึงค่า VERIFY_TOKEN จาก .env
 
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode && token === VERIFY_TOKEN) {
     console.log("WEBHOOK VERIFIED");
-    res.status(200).send(challenge);
+    res.status(200).send(challenge); // คืนค่า challenge ให้ Facebook
   } else {
+    console.error("Forbidden: Token mismatch");
     res.sendStatus(403);
   }
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
+
+
+// Start Server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
