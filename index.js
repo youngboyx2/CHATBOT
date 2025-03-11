@@ -83,9 +83,14 @@ async function getChatGPTResponse(userMessage) {
   }
 }
 
-// ✅ ฟังก์ชันล้างข้อมูลที่ไม่ต้องการ
+// ฟังก์ชันสำหรับลบ Annotation ที่ไม่ต้องการ
 function cleanResponse(text) {
-  return text.replace(/\[\d+:\d+†source\]/g, "").trim();
+  return text
+    .replace(/\[\d+:\d+†source\]/g, "")
+    .replace(/\[\d+†[^\]]+\]/g, "")
+    .replace(/【\d+:\d+†source】/g, "")
+    .replace(/【\d+†[^\]]+】/g, "")
+    .trim();
 }
 
  
