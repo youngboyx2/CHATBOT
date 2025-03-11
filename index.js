@@ -41,17 +41,21 @@ app.post("/webhook", async (req, res) => {
 async function getChatGPTResponse(userMessage) {
   try {
     // ✅ 1. สร้าง Thread ใหม่ก่อน
-    const thread = await openai.beta.threads.create();
+    const thread = await openai.beta.threads.create({}, {
+      headers: { "OpenAI-Beta": "assistants=v2" } // ✅ รองรับ Assistants v2
+    });
+
     if (!thread || !thread.id) {
       throw new Error("❌ Failed to create thread");
     }
     console.log("✅ Thread created:", thread.id);
 
     // ✅ 2. เพิ่มข้อความของผู้ใช้เข้าไปใน Thread
-    await openai.beta.threads.messages.create(thread.id, {
-      role: "user",
-      content: userMessage,
-    });
+    await openai.beta.threads.messages.create(
+      thread.id,
+      { role: "user", content: userMessage },
+      { headers: { "OpenAI-Beta": "assistants=v2" } } // ✅ รองรับ Assistants v2
+    );
     console.log("✅ User message added to thread");
 
     // ✅ 3. ตรวจสอบ Assistant ID
@@ -60,15 +64,11 @@ async function getChatGPTResponse(userMessage) {
     }
 
     // ✅ 4. รัน Assistant API (ใช้ `ASSISTANT_ID`)
-    const runResponse = await openai.beta.threads.runs.create({
-      thread_id: thread.id,
-      assistant_id: process.env.OPENAI_ASSISTANT_ID, // ใช้ Assistant ID จาก .env
-      model: "gpt-4o", // ✅ ต้องระบุโมเดลให้แน่ใจ
-      instructions: "ตอบคำถามโดยอ้างอิงจากข้อมูลที่อัปโหลดไว้", // ✅ ใส่คำสั่งเฉพาะ
-      tools: [], // ✅ อาจต้องระบุ tools เป็นอาร์เรย์
-      tool_choice: "auto", // ✅ ป้องกันข้อผิดพลาดของ `params`
-      parameters: {}, // ✅ ป้องกัน `undefined`
-    });
+    const runResponse = await openai.beta.threads.runs.create(
+      thread.id,
+      { assistant_id: process.env.OPENAI_ASSISTANT_ID },
+      { headers: { "OpenAI-Beta": "assistants=v2" } } // ✅ รองรับ Assistants v2
+    );
 
     if (!runResponse || !runResponse.id) {
       throw new Error("❌ Failed to start Assistant run");
@@ -79,12 +79,20 @@ async function getChatGPTResponse(userMessage) {
     let runStatus;
     do {
       await new Promise((resolve) => setTimeout(resolve, 2000)); // รอ 2 วินาที
-      runStatus = await openai.beta.threads.runs.retrieve(thread.id, runResponse.id);
+      runStatus = await openai.beta.threads.runs.retrieve(
+        thread.id,
+        runResponse.id,
+        { headers: { "OpenAI-Beta": "assistants=v2" } } // ✅ รองรับ Assistants v2
+      );
       console.log("🔄 Run status:", runStatus.status);
     } while (runStatus.status !== "completed");
 
     // ✅ 6. ดึงข้อความตอบกลับจาก Assistant
-    const messages = await openai.beta.threads.messages.list(thread.id);
+    const messages = await openai.beta.threads.messages.list(
+      thread.id,
+      { headers: { "OpenAI-Beta": "assistants=v2" } } // ✅ รองรับ Assistants v2
+    );
+
     if (!messages.data || messages.data.length === 0) {
       throw new Error("❌ No response from Assistant");
     }
