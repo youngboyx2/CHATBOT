@@ -22,7 +22,7 @@ async function getChatGPTResponse(userMessage) {
       throw new Error("Failed to create thread");
     }
 
-    // เรียกใช้ Assistant API
+    // สร้าง Run ให้ Assistant ทำงาน
     const runResponse = await openaiClient.beta.threads.runs.create({
       thread_id: thread.id,
       assistant_id: "asst_ST3twGwQGZKeNqAvGjjG5gem",
@@ -54,6 +54,7 @@ async function getChatGPTResponse(userMessage) {
     return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
   }
 }
+
 
 // Webhook สำหรับ Messenger
 app.post("/webhook", async (req, res) => {
