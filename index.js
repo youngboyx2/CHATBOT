@@ -59,13 +59,16 @@ async function getChatGPTResponse(sender_psid, userMessage) {
       { headers: { "OpenAI-Beta": "assistants=v2" } }
     );
 
-    // ✅ ดึงจำนวนข้อความทั้งหมดใน Thread (เพื่อดูว่าเกิน 10 ไหม)
+    // ✅ ดึงจำนวนข้อความทั้งหมดใน Thread
     const messages = await openai.beta.threads.messages.list(thread_id, {
       headers: { "OpenAI-Beta": "assistants=v2" }
     });
 
+    // ✅ นับเฉพาะข้อความที่มาจาก "user" เท่านั้น
+    const userMessagesCount = messages.data.filter(msg => msg.role === "user").length;
+
     console.log(`📩 User ${sender_psid} asked: "${userMessage}"`);
-    console.log(`🔄 Current messages count: ${messages.data.length} in thread ${thread_id}`);
+    console.log(`🔄 User messages count: ${userMessagesCount} in thread ${thread_id}`);
 
     const runResponse = await openai.beta.threads.runs.create(
       thread_id,
