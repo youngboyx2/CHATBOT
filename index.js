@@ -16,26 +16,39 @@ const openaiClient = new openai.OpenAI({
 // ฟังก์ชันใหม่ที่ใช้ Assistant API
 async function getChatGPTResponse(userMessage) {
   try {
-    // ใช้ Assistant API
-    const response = await openaiClient.beta.threads.createAndRun({
-      assistant_id: "asst_ST3twGwQGZKeNqAvGjjG5gem", // ใช้ Assistant ID ที่เทรนไว้
-      thread: {
-        messages: [{ role: "user", content: userMessage }],
-      },
+    // สร้าง Thread ใหม่ก่อน
+    const thread = await openaiClient.beta.threads.create();
+    if (!thread || !thread.id) {
+      throw new Error("Failed to create thread");
+    }
+
+    // เรียกใช้ Assistant API
+    const runResponse = await openaiClient.beta.threads.runs.create({
+      thread_id: thread.id,
+      assistant_id: "asst_ST3twGwQGZKeNqAvGjjG5gem",
+      instructions: "กรุณาตอบคำถามตามฐานข้อมูลที่เทรนไว้",
     });
 
-    // รอให้ Assistant ตอบกลับ
+    if (!runResponse || !runResponse.id) {
+      throw new Error("Failed to start Assistant run");
+    }
+
+    // ตรวจสอบสถานะการทำงานของ Assistant
     let run;
     do {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      run = await openaiClient.beta.threads.runs.retrieve(response.id, response.latest_run.id);
+      run = await openaiClient.beta.threads.runs.retrieve(thread.id, runResponse.id);
     } while (run.status !== "completed");
 
     // ดึงข้อความจาก Assistant
-    const messages = await openaiClient.beta.threads.messages.list(response.id);
-    const reply = messages.data[messages.data.length - 1].content[0].text.value;
+    const messages = await openaiClient.beta.threads.messages.list(thread.id);
+    if (!messages.data || messages.data.length === 0) {
+      throw new Error("No response from Assistant");
+    }
 
+    const reply = messages.data[messages.data.length - 1].content[0].text.value;
     return reply;
+
   } catch (error) {
     console.error("ChatGPT Error:", error);
     return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
@@ -50,7 +63,7 @@ app.post("/webhook", async (req, res) => {
     body.entry.forEach(async (entry) => {
       let webhookEvent = entry.messaging[0];
       let sender_psid = webhookEvent.sender.id;
-      let userMessage = webhookEvent.message.text;
+      let userMessage = webhookEvent.message?.text || "No message received";
 
       console.log("Received message:", userMessage);
 
