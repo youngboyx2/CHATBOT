@@ -52,11 +52,20 @@ async function getChatGPTResponse(sender_psid, userMessage) {
   try {
     const thread_id = await getOrCreateThread(sender_psid); // ✅ ใช้ฟังก์ชันใหม่
 
+    // ✅ เพิ่มข้อความของผู้ใช้เข้าไปใน Thread
     await openai.beta.threads.messages.create(
       thread_id,
       { role: "user", content: userMessage },
       { headers: { "OpenAI-Beta": "assistants=v2" } }
     );
+
+    // ✅ ดึงจำนวนข้อความทั้งหมดใน Thread (เพื่อดูว่าเกิน 10 ไหม)
+    const messages = await openai.beta.threads.messages.list(thread_id, {
+      headers: { "OpenAI-Beta": "assistants=v2" }
+    });
+
+    console.log(`📩 User ${sender_psid} asked: "${userMessage}"`);
+    console.log(`🔄 Current messages count: ${messages.data.length} in thread ${thread_id}`);
 
     const runResponse = await openai.beta.threads.runs.create(
       thread_id,
@@ -74,15 +83,15 @@ async function getChatGPTResponse(sender_psid, userMessage) {
       );
     } while (runStatus.status !== "completed");
 
-    const messages = await openai.beta.threads.messages.list(
+    const assistantMessages = await openai.beta.threads.messages.list(
       thread_id,
       { headers: { "OpenAI-Beta": "assistants=v2" } }
     );
 
-    const assistantMessage = messages.data.find(msg => msg.role === "assistant");
+    const assistantMessage = assistantMessages.data.find(msg => msg.role === "assistant");
     const reply = cleanResponse(assistantMessage?.content[0]?.text?.value || "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้");
 
-    console.log("✅ Assistant reply:", reply);
+    console.log(`✅ Assistant reply: ${reply}`);
     return reply;
 
   } catch (error) {
@@ -90,6 +99,7 @@ async function getChatGPTResponse(sender_psid, userMessage) {
     return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
   }
 }
+
 
 // ✅ ฟังก์ชันทำความสะอาดข้อความ
 function cleanResponse(text) {
