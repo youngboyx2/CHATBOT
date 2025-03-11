@@ -47,6 +47,8 @@ async function runAssistant(threadId) {
     const runResponse = await openaiClient.beta.threads.runs.create({
       thread_id: threadId,
       assistant_id: "asst_ST3twGwQGZKeNqAvGjjG5gem",
+      model: "gpt-4o", // ✅ กำหนดโมเดลให้แน่ใจ
+      parameters: {},   // ✅ ป้องกันปัญหาพารามิเตอร์ที่ขาดหาย
     });
 
     if (!runResponse || !runResponse.id) {
