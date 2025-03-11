@@ -54,10 +54,15 @@ async function getChatGPTResponse(userMessage) {
     });
     console.log("✅ User message added to thread");
 
-    // ✅ 3. รัน Assistant API โดยใช้ Assistant ID จาก .env
+    // ✅ 3. ตรวจสอบ Assistant ID
+    if (!process.env.OPENAI_ASSISTANT_ID) {
+      throw new Error("❌ OPENAI_ASSISTANT_ID is not defined in .env");
+    }
+
+    // ✅ 4. รัน Assistant API (ใช้ `ASSISTANT_ID`)
     const runResponse = await openai.beta.threads.runs.create({
       thread_id: thread.id,
-      assistant_id: process.env.OPENAI_ASSISTANT_ID, // ใช้ Assistant ID ที่มี Dataset
+      assistant_id: process.env.OPENAI_ASSISTANT_ID, // ใช้ Assistant ID จาก .env
     });
 
     if (!runResponse || !runResponse.id) {
@@ -65,15 +70,15 @@ async function getChatGPTResponse(userMessage) {
     }
     console.log("✅ Assistant run started:", runResponse.id);
 
-    // ✅ 4. รอให้ Assistant ทำงานเสร็จ
+    // ✅ 5. รอให้ Assistant ทำงานเสร็จ
     let runStatus;
     do {
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // รอ 2 วินาทีเพื่อลด API call rate
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // รอ 2 วินาที
       runStatus = await openai.beta.threads.runs.retrieve(thread.id, runResponse.id);
       console.log("🔄 Run status:", runStatus.status);
     } while (runStatus.status !== "completed");
 
-    // ✅ 5. ดึงข้อความตอบกลับจาก Assistant
+    // ✅ 6. ดึงข้อความตอบกลับจาก Assistant
     const messages = await openai.beta.threads.messages.list(thread.id);
     if (!messages.data || messages.data.length === 0) {
       throw new Error("❌ No response from Assistant");
