@@ -16,37 +16,36 @@ const openaiClient = new openai.OpenAI({
 // ฟังก์ชันใหม่ที่ใช้ Assistant API
 async function getChatGPTResponse(userMessage) {
   try {
-    // สร้าง Thread ใหม่ก่อน
+    // ✅ 1. สร้าง Thread ใหม่ก่อน
     const thread = await openaiClient.beta.threads.create();
     if (!thread || !thread.id) {
       throw new Error("Failed to create thread");
     }
 
-    // เพิ่มข้อความลงใน Thread
+    // ✅ 2. เพิ่มข้อความของผู้ใช้เข้าไปใน Thread
     await openaiClient.beta.threads.messages.create(thread.id, {
       role: "user",
       content: userMessage,
     });
 
-    // สร้าง Run ให้ Assistant ทำงาน
+    // ✅ 3. เรียกใช้ Assistant API โดยใช้ `thread_id` ที่สร้างก่อนหน้า
     const runResponse = await openaiClient.beta.threads.runs.create({
-      thread_id: thread.id, // ใช้ thread_id ที่สร้างก่อนหน้า
+      thread_id: thread.id,
       assistant_id: "asst_ST3twGwQGZKeNqAvGjjG5gem",
-      instructions: "กรุณาตอบคำถามตามฐานข้อมูลที่เทรนไว้",
     });
 
     if (!runResponse || !runResponse.id) {
       throw new Error("Failed to start Assistant run");
     }
 
-    // ตรวจสอบสถานะการทำงานของ Assistant
+    // ✅ 4. ตรวจสอบสถานะของ Assistant จนกว่าจะเสร็จสิ้น
     let run;
     do {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       run = await openaiClient.beta.threads.runs.retrieve(thread.id, runResponse.id);
     } while (run.status !== "completed");
 
-    // ดึงข้อความจาก Assistant
+    // ✅ 5. ดึงข้อความตอบกลับจาก Assistant
     const messages = await openaiClient.beta.threads.messages.list(thread.id);
     if (!messages.data || messages.data.length === 0) {
       throw new Error("No response from Assistant");
@@ -60,6 +59,7 @@ async function getChatGPTResponse(userMessage) {
     return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
   }
 }
+
 
 
 
