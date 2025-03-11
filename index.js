@@ -63,6 +63,11 @@ async function getChatGPTResponse(userMessage) {
     const runResponse = await openai.beta.threads.runs.create({
       thread_id: thread.id,
       assistant_id: process.env.OPENAI_ASSISTANT_ID, // ใช้ Assistant ID จาก .env
+      model: "gpt-4o", // ✅ ต้องระบุโมเดลให้แน่ใจ
+      instructions: "ตอบคำถามโดยอ้างอิงจากข้อมูลที่อัปโหลดไว้", // ✅ ใส่คำสั่งเฉพาะ
+      tools: [], // ✅ อาจต้องระบุ tools เป็นอาร์เรย์
+      tool_choice: "auto", // ✅ ป้องกันข้อผิดพลาดของ `params`
+      parameters: {}, // ✅ ป้องกัน `undefined`
     });
 
     if (!runResponse || !runResponse.id) {
