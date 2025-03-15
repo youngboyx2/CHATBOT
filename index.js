@@ -1,16 +1,15 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const axios = require("axios");
-require("dotenv").config();
 const { OpenAI } = require("openai");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.PORT || 3000;
 
 app.use(bodyParser.json());
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.OPENAI_API_KEY
 });
 
 // 🔹 ใช้ Object เก็บ Thread ID ของแต่ละผู้ใช้ชั่วคราว (หรือใช้ฐานข้อมูลแทน)
@@ -72,7 +71,7 @@ async function getChatGPTResponse(sender_psid, userMessage) {
 
     const runResponse = await openai.beta.threads.runs.create(
       thread_id,
-      { assistant_id: process.env.OPENAI_ASSISTANT_ID },
+      { assistant_id: process.OPENAI_ASSISTANT_ID },
       { headers: { "OpenAI-Beta": "assistants=v2" } }
     );
 
@@ -142,7 +141,7 @@ function sendMessage(sender_psid, response) {
   };
 
   axios.post(
-    `https://graph.facebook.com/v12.0/me/messages?access_token=${process.env.PAGE_ACCESS_TOKEN}`,
+    `https://graph.facebook.com/v12.0/me/messages?access_token=${process.PAGE_ACCESS_TOKEN}`,
     request_body
   )
   .then(() => console.log("✅ Message sent!"))
@@ -151,7 +150,7 @@ function sendMessage(sender_psid, response) {
 
 // ✅ Verify Webhook
 app.get("/webhook", (req, res) => {
-  const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+  const VERIFY_TOKEN = process.VERIFY_TOKEN;
 
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
