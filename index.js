@@ -4,12 +4,12 @@ const axios = require("axios");
 const { OpenAI } = require("openai");
 
 const app = express();
-const PORT = process.PORT || 3000;
+const PORT = process.env.PORT || 3000; // รับค่าจาก Environment หรือใช้ 3000 เป็นค่าเริ่มต้น
 
 app.use(bodyParser.json());
 
 const openai = new OpenAI({
-  apiKey: process.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY // รับค่า API Key จาก Environment Variables บน Render
 });
 
 // 🔹 ใช้ Object เก็บ Thread ID ของแต่ละผู้ใช้ชั่วคราว (หรือใช้ฐานข้อมูลแทน)
