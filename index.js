@@ -139,7 +139,7 @@ app.post("/webhook", async (req, res) => {
       let sender_psid = webhook_event.sender.id;
 
 
-      
+
       if (webhook_event.message) {
         let userMessage = webhook_event.message.text;
         let aiResponse = await getChatGPTResponse(sender_psid, userMessage);
@@ -154,6 +154,10 @@ app.post("/webhook", async (req, res) => {
 
 
 function sendMessage(sender_psid, response) {
+  if (!response) {
+    response = "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
+  }
+
   let request_body = {
     recipient: { id: sender_psid },
     message: { text: response },
@@ -163,9 +167,10 @@ function sendMessage(sender_psid, response) {
     `https://graph.facebook.com/v12.0/me/messages?access_token=${process.env.PAGE_ACCESS_TOKEN}`,
     request_body
   )
-  .then(() => console.log("Message sent!"))
-  .catch((error) => console.error("Error sending message:", error));
+  .then(() => console.log("✅ Message sent!"))
+  .catch((error) => console.error("❌ Error sending message:", error));
 }
+
 
 
 app.get("/webhook", (req, res) => {
