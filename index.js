@@ -103,13 +103,18 @@ async function getChatGPTResponse(sender_psid, userMessage) {
 
 
 function cleanResponse(text) {
+  if (!text) return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
+
   return text
-    .replace(/\[\d+:\d+†source\]/g, "")
+    .replace(/\[\d+:\d+†source\]/g, "")  // ลบเลขอ้างอิงของ OpenAI
     .replace(/\[\d+†[^\]]+\]/g, "")
     .replace(/【\d+:\d+†source】/g, "")
     .replace(/【\d+†[^\]]+】/g, "")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, "$1: $2") // จัดรูปแบบ Markdown ลิงก์ให้เป็นข้อความที่ใช้ได้
+    .replace(/https:\/\/moodle\.rmutsv\.ac\.th\/\)/g, "https://moodle.rmutsv.ac.th/") // แก้ลิงก์ผิดพลาดที่ OpenAI อาจส่งมา
     .trim();
 }
+
 
 
 app.post("/webhook", async (req, res) => {
@@ -134,6 +139,10 @@ app.post("/webhook", async (req, res) => {
 
 
 function sendMessage(sender_psid, response) {
+  if (!response) {
+    response = "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
+  }
+
   let request_body = {
     recipient: { id: sender_psid },
     message: { text: response },
@@ -143,9 +152,10 @@ function sendMessage(sender_psid, response) {
     `https://graph.facebook.com/v12.0/me/messages?access_token=${process.env.PAGE_ACCESS_TOKEN}`,
     request_body
   )
-  .then(() => console.log("Message sent!"))
-  .catch((error) => console.error("Error sending message:", error));
+  .then(() => console.log("✅ Message sent!"))
+  .catch((error) => console.error("❌ Error sending message:", error));
 }
+
 
 
 app.get("/webhook", (req, res) => {
