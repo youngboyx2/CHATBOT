@@ -101,7 +101,6 @@ async function getChatGPTResponse(sender_psid, userMessage) {
 }
 
 
-
 function cleanResponse(text) {
   if (!text) return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
 
@@ -123,11 +122,14 @@ function cleanResponse(text) {
   if (urls && urls.length > 1) {
     const uniqueUrl = urls[0]; // เลือกลิงก์แรก
     text = text.replace(urlRegex, ""); // ลบลิงก์ทั้งหมด
-    text = ${uniqueUrl} ${text.trim()}; // ใส่ลิงก์แรกกลับไปที่ต้นข้อความ
+    text = `${uniqueUrl} ${text.trim()}`; // ใส่ลิงก์แรกกลับไปที่ต้นข้อความ
   }
 
   return text.trim();
 }
+
+
+
 
 
 app.post("/webhook", async (req, res) => {
@@ -137,8 +139,6 @@ app.post("/webhook", async (req, res) => {
     body.entry.forEach(async function(entry) {
       let webhook_event = entry.messaging[0];
       let sender_psid = webhook_event.sender.id;
-
-
 
       if (webhook_event.message) {
         let userMessage = webhook_event.message.text;
