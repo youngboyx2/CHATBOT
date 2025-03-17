@@ -11,7 +11,7 @@ app.use(bodyParser.json());
 
 const openai = new OpenAI({apiKey: process.OPENAI_API_KEY});
 
-
+const receivedMessages = new Set();
 const userThreads = {};
 
 
@@ -103,30 +103,12 @@ async function getChatGPTResponse(sender_psid, userMessage) {
 
 
 function cleanResponse(text) {
-  if (!text) return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
-
-  // ลบอ้างอิงที่ไม่จำเป็น
-  text = text
+  return text
     .replace(/\[\d+:\d+†source\]/g, "")
     .replace(/\[\d+†[^\]]+\]/g, "")
     .replace(/【\d+:\d+†source】/g, "")
-    .replace(/【\d+†[^\]]+】/g, "");
-
-  // แปลง Markdown URL ให้อยู่ในรูปแบบข้อความธรรมดา
-  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, "$2");
-
-  // ค้นหาลิงก์ทั้งหมดในข้อความ
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const urls = text.match(urlRegex);
-
-  // ถ้ามีมากกว่าหนึ่งลิงก์ ให้ใช้เฉพาะลิงก์แรก
-  if (urls && urls.length > 1) {
-    const uniqueUrl = urls[0]; // เลือกลิงก์แรก
-    text = text.replace(urlRegex, ""); // ลบลิงก์ทั้งหมด
-    text = `${uniqueUrl} ${text.trim()}`; // ใส่ลิงก์แรกกลับไปที่ต้นข้อความ
-  }
-
-  return text.trim();
+    .replace(/【\d+†[^\]]+】/g, "")
+    .trim();
 }
 
 
@@ -139,6 +121,14 @@ app.post("/webhook", async (req, res) => {
     body.entry.forEach(async function(entry) {
       let webhook_event = entry.messaging[0];
       let sender_psid = webhook_event.sender.id;
+      let message_id = webhook_event.message.mid; // ID ของข้อความ
+
+      // ตรวจสอบว่าเคยได้รับข้อความนี้หรือไม่
+      if (receivedMessages.has(message_id)) {
+        console.log("⏳ Duplicate message detected, ignoring...");
+        return;
+      }
+      receivedMessages.add(message_id);
 
       if (webhook_event.message) {
         let userMessage = webhook_event.message.text;
@@ -154,9 +144,7 @@ app.post("/webhook", async (req, res) => {
 
 
 function sendMessage(sender_psid, response) {
-  if (!response) {
-    response = "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
-  }
+
 
   let request_body = {
     recipient: { id: sender_psid },
@@ -167,8 +155,8 @@ function sendMessage(sender_psid, response) {
     `https://graph.facebook.com/v12.0/me/messages?access_token=${process.env.PAGE_ACCESS_TOKEN}`,
     request_body
   )
-  .then(() => console.log("✅ Message sent!"))
-  .catch((error) => console.error("❌ Error sending message:", error));
+  .then(() => console.log("Message sent!"))
+  .catch((error) => console.error("Error sending message:", error));
 }
 
 
