@@ -112,19 +112,23 @@ function cleanResponse(text) {
     .replace(/【\d+:\d+†source】/g, "")
     .replace(/【\d+†[^\]]+】/g, "");
 
+  // แปลง Markdown URL ให้อยู่ในรูปแบบข้อความธรรมดา
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, "$2");
+
   // ค้นหาลิงก์ทั้งหมดในข้อความ
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const urls = text.match(urlRegex);
 
-  // ถ้ามีลิงก์มากกว่าหนึ่ง ให้ใช้เฉพาะลิงก์แรก และลบลิงก์ที่ซ้ำกันออก
+  // ถ้ามีมากกว่าหนึ่งลิงก์ ให้ใช้เฉพาะลิงก์แรก
   if (urls && urls.length > 1) {
-    const uniqueUrl = urls[0]; // เก็บลิงก์แรกไว้
+    const uniqueUrl = urls[0]; // เลือกลิงก์แรก
     text = text.replace(urlRegex, ""); // ลบลิงก์ทั้งหมด
     text = `${uniqueUrl} ${text.trim()}`; // ใส่ลิงก์แรกกลับไปที่ต้นข้อความ
   }
 
   return text.trim();
 }
+
 
 
 
