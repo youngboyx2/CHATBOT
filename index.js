@@ -105,14 +105,25 @@ async function getChatGPTResponse(sender_psid, userMessage) {
 function cleanResponse(text) {
   if (!text) return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
 
-  return text
-    .replace(/\[\d+:\d+†source\]/g, "")  // ลบเลขอ้างอิงของ OpenAI
+  // ลบอ้างอิงที่ไม่จำเป็น
+  text = text
+    .replace(/\[\d+:\d+†source\]/g, "")
     .replace(/\[\d+†[^\]]+\]/g, "")
     .replace(/【\d+:\d+†source】/g, "")
-    .replace(/【\d+†[^\]]+】/g, "")
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, "$1: $2") // จัดรูปแบบ Markdown ลิงก์ให้เป็นข้อความที่ใช้ได้
-    .replace(/https:\/\/moodle\.rmutsv\.ac\.th\/\)/g, "https://moodle.rmutsv.ac.th/") // แก้ลิงก์ผิดพลาดที่ OpenAI อาจส่งมา
-    .trim();
+    .replace(/【\d+†[^\]]+】/g, "");
+
+  // ค้นหาลิงก์ทั้งหมดในข้อความ
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const urls = text.match(urlRegex);
+
+  // ถ้ามีลิงก์มากกว่าหนึ่ง ให้ใช้เฉพาะลิงก์แรก และลบลิงก์ที่ซ้ำกันออก
+  if (urls && urls.length > 1) {
+    const uniqueUrl = urls[0]; // เก็บลิงก์แรกไว้
+    text = text.replace(urlRegex, ""); // ลบลิงก์ทั้งหมด
+    text = `${uniqueUrl} ${text.trim()}`; // ใส่ลิงก์แรกกลับไปที่ต้นข้อความ
+  }
+
+  return text.trim();
 }
 
 
