@@ -24,7 +24,7 @@ async function getOrCreateThread(sender_psid) {
       headers: { "OpenAI-Beta": "assistants=v2" }
     });
 
-    if (messages.data.length >= 10) {
+    if (messages.data.length >= 20) {
       console.log("Creating new thread for user:", sender_psid);
       const newThread = await openai.beta.threads.create({}, {
         headers: { "OpenAI-Beta": "assistants=v2" }
