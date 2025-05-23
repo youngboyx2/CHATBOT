@@ -112,19 +112,26 @@ function cleanResponse(text) {
     .replace(/【\d+:\d+†source】/g, "")
     .replace(/【\d+†[^\]]+】/g, "");
 
+  // แปลง Markdown URL ให้เหลือแค่ url (เช่น [xxx](https://...) => https://...)
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, "$2");
+
   // ค้นหาลิงก์ทั้งหมดในข้อความ
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const urls = text.match(urlRegex);
 
   // ถ้ามีลิงก์มากกว่าหนึ่ง ให้ใช้เฉพาะลิงก์แรก และลบลิงก์ที่ซ้ำกันออก
   if (urls && urls.length > 1) {
-    const uniqueUrl = urls[0]; // เก็บลิงก์แรกไว้
-    text = text.replace(urlRegex, ""); // ลบลิงก์ทั้งหมด
-    text = `${uniqueUrl} ${text.trim()}`; // ใส่ลิงก์แรกกลับไปที่ต้นข้อความ
+    // เลือกลิงก์แรก
+    const uniqueUrl = urls[0];
+    // ลบลิงก์ทั้งหมด
+    text = text.replace(urlRegex, "");
+    // วางลิงก์แรกนำหน้าข้อความ
+    text = `${uniqueUrl} ${text.trim()}`;
   }
 
   return text.trim();
 }
+
 
 
 // ✅ Webhook Messenger
