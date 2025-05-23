@@ -132,9 +132,6 @@ function cleanResponse(text) {
   return text.trim();
 }
 
-
-
-// ✅ Webhook Messenger
 app.post("/webhook", async (req, res) => {
   let body = req.body;
 
