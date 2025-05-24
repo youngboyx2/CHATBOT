@@ -114,29 +114,21 @@ function cleanResponse(text) {
     .replace(/【\d+:\d+†source】/g, "")
     .replace(/【\d+†[^\]]+】/g, "");
 
-  // แปลง Markdown URL ให้เหลือแค่ url (เช่น [xxx](https://...) => https://...)
+  // แปลง Markdown URL ให้เหลือแค่ url
   text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, "$2");
 
-  // ค้นหาลิงก์ทั้งหมดในข้อความ
+  // ลบลิงก์ที่ซ้ำ
   const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const urls = text.match(urlRegex);
+  let seen = new Set();
+  text = text.replace(urlRegex, (url) => {
+    if (seen.has(url)) return ""; // ลบถ้าซ้ำ
+    seen.add(url);
+    return url;
+  });
 
-if (urls && urls.length > 1) {
-  const uniqueUrl = urls[0]; // เก็บลิงก์แรกไว้
-  text = text.replace(urlRegex, ""); // ลบลิงก์ทั้งหมด
-  text = `${uniqueUrl} ${text.trim()}`; // ใส่ลิงก์แรกกลับไปที่ต้นข้อความ
+  return text.trim().replace(/\s+/g, " ");
 }
-  if (urls && urls.length > 1) {
-    // เลือกลิงก์แรก
-    const uniqueUrl = urls[0];
-    // ลบลิงก์ทั้งหมด
-    text = text.replace(urlRegex, "");
-    // วางลิงก์แรกนำหน้าข้อความ
-    text = `${uniqueUrl} ${text.trim()}`;
-  }
 
-  return text.trim();
-}
 
 app.post("/webhook", async (req, res) => {
   let body = req.body;
