@@ -91,7 +91,9 @@ async function getChatGPTResponse(sender_psid, userMessage) {
     );
 
     const assistantMessage = assistantMessages.data.find(msg => msg.role === "assistant");
-    const reply = cleanResponse(assistantMessage?.content[0]?.text?.value || "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้");
+    console.log("🔎 Raw reply:", assistantMessage?.content[0]?.text?.value); // <<== เพิ่มตรงนี้
+    const reply = cleanResponse(assistantMessage?.content[0]?.text?.value || "ขออภัย ...");
+
 
     console.log(`✅ Assistant reply: ${reply}`);
     return reply;
@@ -119,7 +121,11 @@ function cleanResponse(text) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const urls = text.match(urlRegex);
 
-  // ถ้ามีลิงก์มากกว่าหนึ่ง ให้ใช้เฉพาะลิงก์แรก และลบลิงก์ที่ซ้ำกันออก
+if (urls && urls.length > 1) {
+  const uniqueUrl = urls[0]; // เก็บลิงก์แรกไว้
+  text = text.replace(urlRegex, ""); // ลบลิงก์ทั้งหมด
+  text = `${uniqueUrl} ${text.trim()}`; // ใส่ลิงก์แรกกลับไปที่ต้นข้อความ
+}
   if (urls && urls.length > 1) {
     // เลือกลิงก์แรก
     const uniqueUrl = urls[0];
