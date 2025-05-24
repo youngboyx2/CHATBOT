@@ -117,7 +117,7 @@ function cleanResponse(text) {
   // แปลง Markdown URL ให้เหลือแค่ url
   text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, "$2");
 
-  // ลบลิงก์ที่ซ้ำ
+  // ลบลิงก์ซ้ำ (เฉพาะบรรทัดใหม่ด้วย)
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   let seen = new Set();
   text = text.replace(urlRegex, (url) => {
@@ -126,8 +126,15 @@ function cleanResponse(text) {
     return url;
   });
 
-  return text.trim().replace(/\s+/g, " ");
+  // 1. ตัดเว้นวรรค/เว้นบรรทัดซ้ำ
+  text = text.replace(/[ \t]+\n/g, "\n"); // ตัดช่องว่างหน้าบรรทัด
+  text = text.replace(/\n{3,}/g, "\n\n"); // ถ้าเจอเว้นบรรทัดติดกันมากกว่า 2 ให้เหลือ 2
+  text = text.replace(/[ ]{2,}/g, " ");   // ช่องว่างเกิน 1 ให้เหลือ 1
+
+  // 2. ตัดเว้นวรรคหน้าข้อความ & ท้ายข้อความ
+  return text.trim();
 }
+
 
 
 app.post("/webhook", async (req, res) => {
