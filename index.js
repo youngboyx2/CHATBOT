@@ -28,7 +28,7 @@ async function getOrCreateThread(sender_psid) {
 
     // ถ้าใน Thread มีข้อความเกิน 10 ข้อความ ให้สร้าง Thread ใหม่
     if (messages.data.length >= 10) {
-      console.log("Creating new thread for user:", sender_psid);
+      console.log("🔄 Creating new thread for user:", sender_psid);
       const newThread = await openai.beta.threads.create({}, {
         headers: { "OpenAI-Beta": "assistants=v2" }
       });
@@ -40,7 +40,7 @@ async function getOrCreateThread(sender_psid) {
     return thread_id;
   } else {
     // กรณีผู้ใช้ยังไม่มี Thread จะสร้าง Thread ใหม่สำหรับผู้ใช้คนนี้
-    console.log("Creating first thread for user:", sender_psid);
+    console.log("🆕 Creating first thread for user:", sender_psid);
     const newThread = await openai.beta.threads.create({}, {
       headers: { "OpenAI-Beta": "assistants=v2" }
     });
@@ -69,8 +69,8 @@ async function getChatGPTResponse(sender_psid, userMessage) {
 
     const userMessagesCount = messages.data.filter(msg => msg.role === "user").length;
 
-    console.log(`User ${sender_psid} asked: "${userMessage}"`);
-    console.log(`User messages count: ${userMessagesCount} in thread ${thread_id}`);
+    console.log(`📩 User ${sender_psid} asked: "${userMessage}"`);
+    console.log(`🔄 User messages count: ${userMessagesCount} in thread ${thread_id}`);
 
     // สร้างการรัน (run) ให้ Assistant ตอบกลับโดยใช้ assistant_id จาก .env
     const runResponse = await openai.beta.threads.runs.create(
@@ -109,12 +109,12 @@ async function getChatGPTResponse(sender_psid, userMessage) {
     // ทำความสะอาดข้อความตอบกลับ (ลบ annotation ต่าง ๆ)
     const reply = cleanResponse(assistantMessage?.content[0]?.text?.value || "ขออภัย ...");
 
-    console.log(`Assistant reply: ${reply}`);
+    console.log(`✅ Assistant reply: ${reply}`);
     return reply;
 
   } catch (error) {
     // แสดงข้อผิดพลาดและส่งข้อความตอบกลับกรณีเกิดปัญหา
-    console.error("ChatGPT Error:", error);
+    console.error("❌ ChatGPT Error:", error);
     return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
   }
 }
@@ -194,8 +194,8 @@ function sendMessage(sender_psid, response) {
     `https://graph.facebook.com/v12.0/me/messages?access_token=${process.env.PAGE_ACCESS_TOKEN}`,
     request_body
   )
-  .then(() => console.log("Message sent!"))
-  .catch((error) => console.error("Error sending message:", error));
+  .then(() => console.log("✅ Message sent!"))
+  .catch((error) => console.error("❌ Error sending message:", error));
 }
 
 // ตรวจสอบ webhook กับ Facebook
@@ -207,15 +207,15 @@ app.get("/webhook", (req, res) => {
   const challenge = req.query["hub.challenge"];
 
   if (mode && token === VERIFY_TOKEN) {
-    console.log("WEBHOOK VERIFIED");
+    console.log("✅ WEBHOOK VERIFIED");
     res.status(200).send(challenge);
   } else {
-    console.error("Forbidden: Token mismatch");
+    console.error("❌ Forbidden: Token mismatch");
     res.sendStatus(403);
   }
 });
 
-//เริ่มต้นเซิฟเวอร์
+// เริ่มต้นเซิฟเวอร์
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
