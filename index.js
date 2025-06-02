@@ -104,7 +104,7 @@ async function getChatGPTResponse(sender_psid, userMessage) {
 
     // ค้นหาข้อความที่เป็นบทบาท assistant
     const assistantMessage = assistantMessages.data.find(msg => msg.role === "assistant");
-    console.log("🔎 Raw reply:", assistantMessage?.content[0]?.text?.value);
+    console.log("Raw reply:", assistantMessage?.content[0]?.text?.value);
 
     // ทำความสะอาดข้อความตอบกลับ (ลบ annotation ต่าง ๆ)
     const reply = cleanResponse(assistantMessage?.content[0]?.text?.value || "ขออภัย ...");
