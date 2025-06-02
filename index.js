@@ -156,28 +156,40 @@ function cleanResponse(text) {
 
 // Webhook endpoint สำหรับรับข้อความจาก Facebook Messenger
 app.post("/webhook", async (req, res) => {
-  let body = req.body;
+  const body = req.body;
 
   if (body.object === "page") {
-    // วนลูปตรวจสอบแต่ละ event ที่รับมา
-    body.entry.forEach(async function(entry) {
-      let webhook_event = entry.messaging[0];
-      let sender_psid = webhook_event.sender.id;
+    for (const entry of body.entry) {
+      const webhookEvent = entry.messaging[0];
+      const sender_psid = webhookEvent.sender.id;
 
-      if (webhook_event.message) {
-        // รับข้อความจากผู้ใช้
-        let userMessage = webhook_event.message.text;
-
-        // ส่งข้อความไปยังฟังก์ชันตอบกลับและส่งผลลัพธ์กลับ Messenger
-        let aiResponse = await getChatGPTResponse(sender_psid, userMessage);
+      if (webhookEvent.message) {
+        // กรณีข้อความปกติ
+        const userMessage = webhookEvent.message.text;
+        const aiResponse = await getChatGPTResponse(sender_psid, userMessage);
         sendMessage(sender_psid, aiResponse);
+
+      } else if (webhookEvent.postback) {
+        // กรณี postback เช่น กดปุ่มเริ่มต้น
+        handlePostback(sender_psid, webhookEvent.postback);
       }
-    });
+    }
     res.status(200).send("EVENT_RECEIVED");
   } else {
     res.sendStatus(404);
   }
 });
+
+// ฟังก์ชันจัดการ postback
+function handlePostback(sender_psid, postback) {
+  const payload = postback.payload;
+
+  if (payload === "GET_STARTED_PAYLOAD") {
+    const welcomeMessage = "สวัสดีค่ะ! ยินดีต้อนรับสู่ระบบตอบคำถามของมหาวิทยาลัยฯ สามารถถามคำถามเกี่ยวกับสาขาวิศวกรรมคอมพิวเตอร์และปัญญาประดิษฐ์ได้เลยค่ะ";
+    sendMessage(sender_psid, welcomeMessage);
+  }
+}
+
 
 // ฟังก์ชันส่งข้อความกลับไปยังผู้ใช้ใน Messenger
 function sendMessage(sender_psid, response) {
