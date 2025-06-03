@@ -119,17 +119,16 @@ async function getChatGPTResponse(sender_psid, userMessage) {
   }
 }
 
+// ฟังก์ชันทำความสะอาดข้อความตอบกลับ ลบข้อมูลอ้างอิงและจัดการลิงก์ซ้ำ
 function cleanResponse(text) {
   if (!text) return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
 
-  // ลบอ้างอิงที่ไม่จำเป็น เช่น [1:2†source], 【5:กำหนดการรับสมัครนักศึกษาใหม่.pdf】
+  // ลบอ้างอิงที่ไม่จำเป็น เช่น [1:2†source],  
   text = text
     .replace(/\[\d+:\d+†source\]/g, "")
     .replace(/\[\d+†[^\]]+\]/g, "")
     .replace(/【\d+:\d+†source】/g, "")
-    .replace(/【\d+†[^\]]+】/g, "")
-    .replace(/【\d+:[^】]+\.pdf】/g, "")  // ← เพิ่มตรงนี้
-    .replace(/\[\d+:[^\]]+\.pdf\]/g, ""); // ← และตรงนี้
+    .replace(/【\d+†[^\]]+】/g, "");
 
   // แปลง Markdown URL เช่น [text](url) เป็นแค่ url
   text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, "$2");
@@ -154,7 +153,6 @@ function cleanResponse(text) {
 
   return text.trim();
 }
-
 
 // Webhook endpoint สำหรับรับข้อความจาก Facebook Messenger
 app.post("/webhook", async (req, res) => {
