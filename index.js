@@ -106,6 +106,60 @@ async function getChatGPTResponse(sender_psid, userMessage) {
   }
 }
 
+//ลบข้อมูลอ้างอิงซ้ำและเก็บอ้างอิง URL ที่นำมาใช้
+function cleanResponse(text) {
+  if (!text) return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
+
+  //เก็บ URL ที่พบ เพื่อนำไปแสดงเป็นอ้างอิง
+  const urlRegex = /(https?:\/\/[^\s)]+)/g;
+  let seen = new Set();
+  let references = [];
+
+  //ลบข้อความอ้างอิงเก่า
+  text = text
+    .replace(/\[\d+:\d+†source\]/g, "")
+    .replace(/\[\d+†[^\]]+\]/g, "")
+    .replace(/【\d+:\d+†source】/g, "")
+    .replace(/【\d+†[^\]]+】/g, "")
+
+    //แปลง [ข้อความ](url) เป็น url เท่านั้น เพื่อให้ง่ายต่อการตรวจสอบซ้ำ
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, (match, textInside, url) => {
+      if (!seen.has(url)) {
+        seen.add(url);
+        references.push(url);
+      }
+      return url;
+    });
+
+  //ตรวจสอบและเก็บ URL ที่ซ้ำซ้อนอีกครั้ง
+  text = text.replace(urlRegex, (url) => {
+    if (seen.has(url)) return ""; // ถ้ามีแล้วให้ลบซ้ำ
+    seen.add(url);
+    references.push(url);
+    return url;
+  });
+
+  //ลบ spaces ซ้ำและขึ้นบรรทัดซ้ำ
+  text = text.replace(/[ \t]+\n/g, "\n");
+
+  text = text.replace(/\n{3,}/g, "\n\n");
+
+  text = text.replace(/[ ]{2,}/g, " ").trim();
+
+  //ต่อท้ายด้วยลิสต์อ้างอิง
+  if (references.length > 0) {
+    text += `\n\nอ้างอิง:\n`;
+    references.forEach((ref, idx) => {
+      text += `${idx + 1}. ${ref}\n`;
+    });
+  }
+
+  return text.trim();
+}
+
+//ตัวอย่างใช้:
+//const cleaned = cleanResponse(someText);
+//console.log(cleaned);
 
 
 // Webhook endpoint สำหรับรับข้อความจาก Facebook Messenger
