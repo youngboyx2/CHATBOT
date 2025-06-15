@@ -106,27 +106,7 @@ async function getChatGPTResponse(sender_psid, userMessage) {
   }
 }
 
-//ลบข้อมูลอ้างอิงและจัดการลิงก์ซ้ำ
-function cleanResponse(text) {
-  if (!text) return "ขออภัย ฉันไม่สามารถตอบคำถามได้ในขณะนี้";
-  text = text // ลบอ้างอิงที่ไม่จำเป็น
-    .replace(/\[\d+:\d+†source\]/g, "")
-    .replace(/\[\d+†[^\]]+\]/g, "")
-    .replace(/【\d+:\d+†source】/g, "")
-    .replace(/【\d+†[^\]]+】/g, "");
-  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, "$2"); //url
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  let seen = new Set();
-  text = text.replace(urlRegex, (url) => {
-    if (seen.has(url)) return "";
-    seen.add(url);
-    return url;
-  });
-  text = text.replace(/[ \t]+\n/g, "\n");
-  text = text.replace(/\n{3,}/g, "\n\n");
-  text = text.replace(/[ ]{2,}/g, " ");
-  return text.trim();
-}
+
 
 // Webhook endpoint สำหรับรับข้อความจาก Facebook Messenger
 app.post("/webhook", async (req, res) => {
